@@ -1,0 +1,65 @@
+--- src/main.cpp
++++ src/main.cpp
+@@ -2470,30 +2470,6 @@
+ 
+   // ─────────────────────────────────────────────────────────
+-  //  POST /api/automation — Simpan aturan otomasi
+-  // ─────────────────────────────────────────────────────────
+-  server.on(
+-      "/api/automation", HTTP_POST, [](AsyncWebServerRequest *req) {}, nullptr,
+-      [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index,
+-         size_t total) {
+-        if (!isAuthenticated(req, true)) {
+-          sendError(req, 401, "Tidak terotorisasi.");
+-          return;
+-        }
+-        JsonDocument body;
+-        if (!handleBodyChunk(req, data, len, index, total, body))
+-          return;
+-        if (body.isNull()) {
+-          sendError(req, 400, "Body tidak valid.");
+-          return;
+-        }
+-        patchAndSave([&body](JsonDocument &cfg) {
+-          cfg["automation"].set(body.as<JsonObject>());
+-        });
+-        addLog("ok", "Konfigurasi Otomasi disimpan (" +
+-                         String(body["rules"].as<JsonArray>().size()) +
+-                         " aturan).");
+-        sendOK(req, "Konfigurasi otomasi berhasil disimpan.");
+-      });
+-
+-  // ─────────────────────────────────────────────────────────
+   //  POST /api/automation/test — Eksekusi paksa satu aturan
+   // ─────────────────────────────────────────────────────────
+@@ -2544,4 +2520,28 @@
+ 
+   // ─────────────────────────────────────────────────────────
++  //  POST /api/automation — Simpan aturan otomasi
++  // ─────────────────────────────────────────────────────────
++  server.on(
++      "/api/automation", HTTP_POST, [](AsyncWebServerRequest *req) {}, nullptr,
++      [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index,
++         size_t total) {
++        if (!isAuthenticated(req, true)) {
++          sendError(req, 401, "Tidak terotorisasi.");
++          return;
++        }
++        JsonDocument body;
++        if (!handleBodyChunk(req, data, len, index, total, body))
++          return;
++        if (body.isNull()) {
++          sendError(req, 400, "Body tidak valid.");
++          return;
++        }
++        patchAndSave([&body](JsonDocument &cfg) {
++          cfg["automation"].set(body.as<JsonObject>());
++        });
++        addLog("ok", "Konfigurasi Otomasi disimpan (" +
++                         String(body["rules"].as<JsonArray>().size()) +
++                         " aturan).");
++        sendOK(req, "Konfigurasi otomasi berhasil disimpan.");
++      });
++
++  // ─────────────────────────────────────────────────────────
+   //  Serve static files dari LittleFS

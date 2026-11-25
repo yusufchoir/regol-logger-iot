@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Logger Molinar — Web Configuration Interface untuk MLR-S3 Industrial Data Logger. Konfigurasi LTE, MQTT, Modbus, Webhook, dan hardware mapping.">
+  <meta name="keywords" content="ESP32, data logger, MQTT, Modbus, IoT, industri, konfigurasi">
+  <meta name="author" content="Logger Molinar">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Logger Molinar — Konfigurasi Perangkat</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <!-- Preload critical font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- ════════════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════════════ -->
+  <div id="toast-container" role="alert" aria-live="polite"></div>
+
+  <!-- ════════════════════════════════════════════════
+     CONFIRM MODAL
+════════════════════════════════════════════════ -->
+  <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-icon" id="modal-icon">⚠️</div>
+      <h3 id="modal-title">Konfirmasi</h3>
+      <p id="modal-message">Apakah Anda yakin?</p>
+      <div class="modal-actions">
+        <button id="modal-btn-cancel" class="btn btn-secondary">Batal</button>
+        <button id="modal-btn-confirm" class="btn btn-danger">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+     MOBILE SIDEBAR OVERLAY
+════════════════════════════════════════════════ -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- ════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════ -->
+  <div id="login-screen" role="main">
+    <div class="login-bg"></div>
+    <div class="login-card">
+      <!-- Logo -->
+      <div class="login-logo">
+        <img src="logo.png" alt="Molinar Logo"
+          style="height: 54px; object-fit: contain; margin-right: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
+        <div class="login-logo-text">
+          <h1>Logger Molinar</h1>
+          <span>MLR-S3 · Industrial Data Logger</span>
+        </div>
+      </div>
+
+      <p class="login-title">Masuk ke panel konfigurasi perangkat.</p>
+
+      <!-- Error message -->
+      <div id="login-error" class="login-error" role="alert"></div>
+
+      <!-- Login Form -->
+      <form id="login-form" novalidate autocomplete="off">
+        <div class="form-group">
+          <label for="input-username">Username</label>
+          <input type="text" id="input-username" name="username" class="form-control" placeholder="Masukkan username"
+            autocomplete="username" required spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="input-password">Password</label>
+          <input type="password" id="input-password" name="password" class="form-control"
+            placeholder="Masukkan password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" id="btn-login" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">
+          🔐 Masuk
+        </button>
+      </form>
+
+      <div class="glow-line" style="margin-top:24px; margin-bottom:12px;"></div>
+      <p class="text-xs text-muted" style="text-align:center; font-family: var(--font-mono);">
+        Guest: viewer/viewer123
+      </p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════ -->
+  <div id="app">
+
+    <!-- ── SIDEBAR ── -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Menu navigasi">
+      <!-- Logo -->
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <img src="logo.png" alt="Molinar Logo"
+            style="height: 38px; object-fit: contain; margin-right: 10px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));">
+          <div class="sidebar-logo-text">
+            <h2>Molinar</h2>
+            <p>Data Logger · v1.0.0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Info -->
+      <div class="sidebar-user">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <p id="sidebar-username">admin</p>
+          <span id="sidebar-role">Administrator</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Nav -->
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+
+      <!-- Logout -->
+      <div class="sidebar-footer">
+        <button id="btn-logout" class="btn btn-secondary btn-block">
+          🚪 Keluar
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button id="hamburger-btn" class="hamburger" aria-label="Toggle menu">☰</button>
+          <div>
+            <div class="page-title" id="header-page-title">Informasi Umum</div>
+            <div class="page-subtitle" id="header-page-subtitle">MLR-S3 R16N8 · LTE7600</div>
+          </div>
+        </div>
+        <div class="header-right">
+
+          <div class="header-status">
+            <span class="status-dot"></span>
+            <span>Online</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content">
+
+        <!-- ════════════════════════════════════════════════
+           SECTION 1: DASHBOARD (Informasi Umum)
+      ════════════════════════════════════════════════ -->
+        <section id="section-dashboard" class="section" aria-label="Informasi Umum">
+          <div class="section-header">
+            <div class="header-accent"></div>
+            <h2>Informasi Umum</h2>
+            <p>Status perangkat secara real-time — Koneksi, Waktu, dan Sumber Daya</p>
+          </div>
+
+          <!-- Status Cards -->
+          <div class="status-cards">
+            <!-- LTE -->
+            <div class="status-card cyan" id="card-lte">
+              <div class="status-card-header">
+                <div class="status-card-icon cyan">📡</div>
+                <span class="status-badge" id="lte-badge">OFFLINE</span>
+              </div>
+              <h3 id="lte-operator">-</h3>
+              <p>Koneksi LTE / 4G</p>
+              <div class="meta-line">
+                <span>IP:</span>
+                <span id="lte-ip">-</span>
+              </div>
+              <div class="meta-line">
+                <span>Sinyal:</span>
+                <span id="lte-signal">-</span>
+              </div>
+            </div>
+
+            <!-- Ethernet -->
+            <div class="status-card indigo" id="card-eth">
+              <div class="status-card-header">
+                <div class="status-card-icon indigo">🔌</div>
+                <span class="status-badge" id="eth-badge">OFFLINE</span>
+              </div>
+              <h3 id="eth-status-text">Ethernet W5500</h3>
+              <p>Koneksi Kabel LAN</p>
+              <div class="meta-line">
+                <span>IP:</span>
+                <span id="eth-ip">-</span>
+              </div>
+            </div>
+
+            <!-- WiFi -->
+            <div class="status-card emerald">
+              <div class="status-card-header">
+                <div class="status-card-icon emerald">📶</div>
+                <span class="status-badge online">ONLINE</span>
+              </div>
+              <h3 id="wifi-ssid">-</h3>
+              <p>Koneksi Wi-Fi</p>
+              <div class="meta-line">
+                <span>IP:</span>
+                <span id="wifi-ip">-</span>
+              </div>
+              <div class="meta-line">
+                <span>RSSI:</span>
+                <span id="wifi-rssi">-</span>
+              </div>
+            </div>
+
+            <!-- RTC -->
+            <div class="status-card amber">
+              <div class="status-card-header">
+                <div class="status-card-icon amber">🕐</div>
+                <span class="status-badge online">SYNC</span>
+              </div>
+              <div class="rtc-display" id="rtc-time">--:--:--</div>
+              <div class="rtc-date" id="rtc-date">Memuat waktu...</div>
+              <div class="meta-line" style="margin-top:8px;">
+                <span>RTC DS3231SN</span>
+              </div>
+            </div>
+
+            <!-- MicroSD -->
+            <div class="status-card purple">
+              <div class="status-card-header">
+                <div class="status-card-icon purple">💾</div>
+                <span class="status-badge online" id="sd-status-badge">READY</span>
+              </div>
+              <h3 class="font-mono" style="font-size:18px;" id="sd-free-val">-- GB</h3>
+              <p>Ruang MicroSD Tersisa</p>
+              <div class="meta-line">
+                <span id="sd-meta-val">Total: -- GB · Terpakai: -- GB</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Sensor Readings (Dynamically rendered by app.js) -->
+          <div id="live-sensor-data" class="mb-24">
+            <!-- Filled by LiveSensorViewer -->
+          </div>
+
+          <!-- Hardware Resources -->
+          <div class="resource-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon">🖥️</span>
+                <span id="dashboard-logger-name-card">Sumber Daya Hardware</span>
+              </div>
+              <span class="chip chip-cyan">MLR-S3 R16N8</span>
+            </div>
+            <div class="card-body">
+              <!-- Uptime -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>⏱️</span> Waktu Aktif (Uptime)
+                  </div>
+                  <div class="resource-value font-mono" id="uptime-val" style="color:var(--cyan); font-weight:bold;">
+                    00:00:00
+                  </div>
+                </div>
+              </div>
+
+              <!-- RAM -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>🔵</span> RAM (PSRAM)
+                  </div>
+                  <div class="resource-value" id="ram-val">2560 KB / 8192 KB (31%)</div>
+                </div>
+                <div class="progress-bar">
+                  <div id="ram-bar" class="progress-fill cyan" style="width: 31%;"></div>
+                </div>
+              </div>
+
+              <!-- Flash -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>🟢</span> Flash (LittleFS)
+                  </div>
+                  <div class="resource-value" id="flash-val">5120 KB / 16384 KB (31%)</div>
+                </div>
+                <div class="progress-bar">
+                  <div id="flash-bar" class="progress-fill emerald" style="width: 31%;"></div>
+                </div>
+              </div>
+
+              <!-- Buffer Offline -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>💾</span> Store & Forward Buffer
+                  </div>
+                  <div class="resource-value" id="sf-buffer-val">Memuat...</div>
+                </div>
+                <div class="progress-bar">
+                  <div id="sf-buffer-bar" class="progress-fill purple" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- CPU Load -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>⚙️</span> Beban CPU
+                  </div>
+                  <div class="resource-value" id="cpu-load-val">Memuat...</div>
+                </div>
+                <div class="progress-bar">
+                  <div id="cpu-load-bar" class="progress-fill cyan" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- CPU Temp -->
+              <div class="resource-item">
+                <div class="resource-header">
+                  <div class="resource-name">
+                    <span>🟡</span> Suhu CPU (Internal)
+                  </div>
+                  <div class="resource-value" id="cpu-temp-val">Memuat...</div>
+                </div>
+                <div class="progress-bar">
+                  <div id="cpu-temp-bar" class="progress-fill amber" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION 2: GRAFIK & LOG
+      ════════════════════════════════════════════════ -->
+        <section id="section-grafik" class="section" aria-label="Grafik dan Log Data">
+          <div class="section-header">
+            <div class="header-accent"></div>
+            <h2>History & Log Data</h2>
+            <p>Visualisasi data sensor historis dan log sistem</p>
+          </div>
+
+          <!-- Sensor Chart -->
+          <div class="chart-container" id="grafik-sensor-card">
+            <div class="chart-header" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+              <div class="chart-title"
+                style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%;">
+                📊 Grafik Sensor
+                <select id="chart-sensor-select" class="form-control"
+                  style="width: 160px; padding: 4px 32px 4px 12px; height: 32px; font-size: 13px; cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none;">
+                  <option value="all">Semua Sensor</option>
+                </select>
+
+                <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap;">
+                  <input type="datetime-local" id="filter-start-date" class="form-control"
+                    style="padding: 4px 8px; height: 32px; font-size: 12px; width: 170px;"
+                    title="Waktu & Tanggal Mulai">
+                  <span style="color: var(--text-muted); font-size: 12px;">s/d</span>
+                  <input type="datetime-local" id="filter-end-date" class="form-control"
+                    style="padding: 4px 8px; height: 32px; font-size: 12px; width: 170px;"
+                    title="Waktu & Tanggal Akhir">
+                  <button id="btn-apply-filter" class="btn btn-primary"
+                    style="height: 32px; padding: 0 12px; font-size: 12px;">Terapkan</button>
+                  <button id="btn-download-chart-csv" class="btn btn-secondary"
+                    style="height: 32px; padding: 0 12px; font-size: 12px;">⬇️ Download</button>
+                </div>
+              </div>
+
+              <div class="chart-legend" style="width: 100%; justify-content: flex-end; min-height: 24px;">
+              </div>
+            </div>
+            <canvas id="sensorChart"></canvas>
+          </div>
+
+          <!-- System Log Terminal -->
+          <div class="card mb-24">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon">🖥️</span>
+                Log Sistem
+              </div>
+              <span class="chip chip-emerald">Live Feed</span>
+            </div>
+            <div class="card-body" style="padding-bottom: 16px;">
+              <div id="terminal-log" class="terminal" aria-label="System log terminal"></div>
+            </div>
+          </div>
+
+          <!-- Download Area -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon">⬇️</span>
+                Unduh Data
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="text-sm text-muted" style="margin-bottom:16px;">Filter rentang waktu spesifik sebelum mengunduh
+                data CSV atau Log Sistem.</p>
+
+              <div class="form-row"
+                style="margin-bottom: 20px; background: rgba(0,0,0,0.15); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dl-start-datetime" style="font-size: 12px; font-weight: 600;">Waktu & Tanggal
+                    Mulai</label>
+                  <input type="datetime-local" id="dl-start-datetime" class="form-control"
+                    style="padding: 6px 12px; height: 36px; font-family: monospace;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dl-end-datetime" style="font-size: 12px; font-weight: 600;">Waktu & Tanggal Akhir</label>
+                  <input type="datetime-local" id="dl-end-datetime" class="form-control"
+                    style="padding: 6px 12px; height: 36px; font-family: monospace;">
+                </div>
+              </div>
+
+              <div class="download-area">
+                <button id="btn-download-csv" class="btn btn-emerald">
+                  📄 Unduh Data Sensor (.CSV)
+                </button>
+                <button id="btn-download-log" class="btn btn-secondary">
+                  📋 Unduh Log Sistem (.TXT)
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION 3: INTEGRASI SERVER (Protokol)
+      ════════════════════════════════════════════════ -->
+        <section id="section-integrasi" class="section" aria-label="Integrasi Server">
+          <div class="section-header">
+            <div class="header-accent"></div>
+            <h2>Integrasi Server</h2>
+            <p>Konfigurasi protokol komunikasi ke server eksternal</p>
+          </div>
+
+          <!-- Timing Control -->
+          <div class="card mb-24">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon">⏱️</span>
+                Pengaturan Interval Waktu (Timing Control)
+              </div>
+            </div>
+            <form id="form-timing" data-api="/api/save-timing" novalidate>
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="timing-read">Interval Pembacaan Sensor / Polling (ms)</label>
+                    <input type="number" id="timing-read" name="read_interval" class="form-control" min="1000"
+                      value="2000">
+                    <div class="form-helper" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                      Minimal 1000 ms. Kecepatan alat membaca data fisik.
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="timing-send">Interval Pengiriman Data ke Server (ms)</label>
+                    <input type="number" id="timing-send" name="send_interval" class="form-control" min="5000"
+                      value="10000">
+                    <div class="form-helper" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                      Minimal 5000 ms. Kecepatan alat mengirim payload ke Cloud.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="submit" id="btn-save-timing" class="btn btn-primary">💾 Simpan Interval</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Cloud Management -->
+          <div class="card mb-24">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon">☁️</span>
+                Manajemen Cloud Molinar (Remote Provisioning)
+              </div>
+            </div>
+            <form id="form-cloud" data-api="/api/save-cloud" novalidate>
+              <div class="card-body">
+                <div class="form-group"
+                  style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+                  <label for="cloud-enabled" style="margin:0; font-weight:600;">Aktifkan Cloud Management</label>
+                  <label class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="cloud-enabled" name="enabled" checked
+                      style="opacity:0;width:0;height:0;position:absolute;">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="cloud-client-code">Kode Klien (Perusahaan)</label>
+                    <input type="text" id="cloud-client-code" name="client_code" class="form-control"
+                      placeholder="MOLINAR">
+                  </div>
+                  <div class="form-group">
+                    <label for="cloud-server">Alamat Server Cloud</label>
+                    <input type="text" id="cloud-server" name="server" class="form-control"
+                      placeholder="mqtt.maudynetwork.id" value="mqtt.maudynetwork.id">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="cloud-device-id">Device ID (MAC Address)</label>
+                  <input type="text" id="cloud-device-id" name="device_id" class="form-control" value="083AF21A2B3C"
+                    readonly style="background-color: var(--bg-hover); color: var(--text-muted); cursor: not-allowed;">
+                </div>
+
+                <div id="cloud-sync-status"
+                  style="margin-top: 12px; margin-bottom: 16px; font-weight: 600; font-size: 13px; color: var(--amber); text-shadow: 0 0 8px rgba(245, 158, 11, 0.4); display: flex; align-items: center; gap: 8px;">
+                  <span class="spinner"
+                    style="width:12px; height:12px; border-width:2px; border-color:var(--amber); border-right-color:transparent;"></span>
+                  <span id="cloud-sync-status-text">Status Sinkronisasi: Menunggu Koneksi...</span>
+                </div>
+
+                <div class="notice-badge"
+                  style="background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2); padding: 12px 16px; border-radius: 8px; display: flex; gap: 12px; align-items: flex-start;">
+                  <span style="font-size: 18px; line-height: 1;">ℹ️</span>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+                    <strong style="color: var(--cyan);">INFO SISTEM:</strong> Saat fitur ini aktif, seluruh parameter
+                    perangkat (Modbus RTU, Antarmuka KF350, Kalibrasi Rumus, dan Buffer Offline) akan disinkronisasikan
+                    dan dapat diubah secara penuh secara jarak jauh melalui Dashboard Pusat Cloud Molinar tanpa
+                    memerlukan IP Publik.
+                  </div>
+                </div>
+
+              </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-primary">💾 Simpan Konfigurasi Cloud</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Protocol Tabs -->
+          <div class="tab-bar" role="tablist">
+            <button class="tab-btn" data-tab-group="integrasi" data-tab-target="tab-mqtt" role="tab">
+              📡 MQTT
+            </button>
+            <button class="tab-btn" data-tab-group="integrasi" data-tab-target="tab-webhook" role="tab">
+              🔔 Webhook
+            </button>
+            <button class="tab-btn" data-tab-group="integrasi" data-tab-target="tab-restapi" role="tab">
+              🔑 REST API
+            </button>
+            <button class="tab-btn" data-tab-group="integrasi" data-tab-target="tab-opcua" role="tab">
+              🏭 OPC-UA
+            </button>
+            <button class="tab-btn" data-tab-group="integrasi" data-tab-target="tab-storeforward" role="tab">
+              💾 Store & Forward
+            </button>
+          </div>
+
+          <!-- MQTT Panel -->
+          <div id="tab-mqtt" class="tab-panel" data-tab-panel="integrasi">
+            <div class="card">
+              <div class="protocol-header">
+                <div class="protocol-icon" style="background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.2);">
+                  📡</div>
+                <div style="flex:1;">
+                  <div class="protocol-title">MQTT Broker</div>
+                  <div class="protocol-desc">Message Queuing Telemetry Transport — Protokol IoT ringan</div>
+                  <div style="margin-top: 6px;"><span class="chip chip-emerald" id="status-mqtt">Terhubung</span></div>
+                </div>
+                <label class="protocol-toggle-wrap" title="Aktifkan / Nonaktifkan MQTT">
+                  <span class="protocol-toggle-status">Aktif</span>
+                  <div class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="mqtt-enabled" name="enabled" checked
+                      style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.protocol-toggle-status').textContent = this.checked ? 'Aktif' : 'Nonaktif'">
+                    <span class="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <form data-api="/api/save-mqtt" novalidate>
+                <div class="card-body">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="mqtt-broker">Alamat Broker</label>
+                      <input type="text" id="mqtt-broker" name="broker" class="form-control"
+                        placeholder="mqtt.example.com" value="mqtt.molinar.io">
+                    </div>
+                    <div class="form-group">
+                      <label for="mqtt-port">Port</label>
+                      <input type="number" id="mqtt-port" name="port" class="form-control" placeholder="1883"
+                        value="1883">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="mqtt-client-id">Client ID</label>
+                    <input type="text" id="mqtt-client-id" name="client_id" class="form-control"
+                      placeholder="molinar_01" value="molinar_esp32_01">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="mqtt-user">Username Broker</label>
+                      <input type="text" id="mqtt-user" name="username" class="form-control" placeholder="mqtt_user"
+                        autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="mqtt-pass">Password Broker</label>
+                      <input type="password" id="mqtt-pass" name="password" class="form-control" placeholder="••••••••"
+                        autocomplete="new-password">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="mqtt-topic">Topik Publish</label>
+                    <input type="text" id="mqtt-topic" name="topic" class="form-control" placeholder="molinar/data"
+                      value="molinar/sensor/data">
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">💾 Simpan MQTT</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Webhook Panel -->
+          <div id="tab-webhook" class="tab-panel" data-tab-panel="integrasi">
+            <div class="card">
+              <div class="protocol-header">
+                <div class="protocol-icon"
+                  style="background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.2);">🔔</div>
+                <div style="flex:1;">
+                  <div class="protocol-title">Webhook HTTP</div>
+                  <div class="protocol-desc">Kirim data ke URL eksternal via HTTP request</div>
+                  <div style="margin-top: 6px;"><span class="chip chip-danger" id="status-webhook">Terputus</span></div>
+                </div>
+                <label class="protocol-toggle-wrap" title="Aktifkan / Nonaktifkan Webhook">
+                  <span class="protocol-toggle-status">Nonaktif</span>
+                  <div class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="wh-enabled" name="enabled"
+                      style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.protocol-toggle-status').textContent = this.checked ? 'Aktif' : 'Nonaktif'">
+                    <span class="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <form data-api="/api/save-webhook" novalidate>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="wh-url">Endpoint URL</label>
+                    <input type="url" id="wh-url" name="url" class="form-control"
+                      placeholder="https://example.com/webhook">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="wh-method">Method HTTP</label>
+                      <select id="wh-method" name="method" class="form-control">
+                        <option value="POST" selected>POST</option>
+                        <option value="GET">GET</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="wh-interval">Interval Kirim (detik)</label>
+                      <input type="number" id="wh-interval" name="interval" class="form-control" placeholder="60"
+                        value="60">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="wh-headers">Custom Headers</label>
+                    <textarea id="wh-headers" name="headers" class="form-control"
+                      style="height:80px; resize:vertical; font-family: var(--font-mono); font-size:12px;"
+                      placeholder="Authorization: Bearer xxxx&#10;Content-Type: application/json"></textarea>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">💾 Simpan Webhook</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- REST API Panel -->
+          <div id="tab-restapi" class="tab-panel" data-tab-panel="integrasi">
+            <div class="card">
+              <div class="protocol-header">
+                <div class="protocol-icon"
+                  style="background: var(--emerald-dim); border: 1px solid rgba(0,255,136,0.2);">🔑</div>
+                <div style="flex:1;">
+                  <div class="protocol-title">REST API</div>
+                  <div class="protocol-desc">Integrasi langsung ke REST API dengan autentikasi API Key</div>
+                  <div style="margin-top: 6px;"><span class="chip chip-emerald" id="status-restapi">Terhubung</span>
+                  </div>
+                </div>
+                <label class="protocol-toggle-wrap" title="Aktifkan / Nonaktifkan REST API">
+                  <span class="protocol-toggle-status">Nonaktif</span>
+                  <div class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="rest-enabled" name="enabled"
+                      style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.protocol-toggle-status').textContent = this.checked ? 'Aktif' : 'Nonaktif'">
+                    <span class="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <form data-api="/api/save-restapi" novalidate>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="rest-endpoint">Endpoint API</label>
+                    <input type="url" id="rest-endpoint" name="endpoint" class="form-control"
+                      placeholder="https://api.example.com/v1/data">
+                  </div>
+                  <div class="form-group">
+                    <label for="rest-key">API Key</label>
+                    <input type="password" id="rest-key" name="api_key" class="form-control"
+                      placeholder="sk-xxxxxxxxxxxxxxxx" autocomplete="new-password">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="rest-method">Method</label>
+                      <select id="rest-method" name="method" class="form-control">
+                        <option value="POST" selected>POST</option>
+                        <option value="PUT">PUT</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="rest-timeout">Timeout (ms)</label>
+                      <input type="number" id="rest-timeout" name="timeout" class="form-control" placeholder="5000"
+                        value="5000">
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">💾 Simpan REST API</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- OPC-UA Panel -->
+          <div id="tab-opcua" class="tab-panel" data-tab-panel="integrasi">
+            <div class="card">
+              <div class="protocol-header">
+                <div class="protocol-icon" style="background: var(--amber-dim); border: 1px solid rgba(255,179,0,0.2);">
+                  🏭</div>
+                <div style="flex:1;">
+                  <div class="protocol-title">OPC-UA</div>
+                  <div class="protocol-desc">Open Platform Communications Unified Architecture — Standar industri IIoT
+                  </div>
+                  <div style="margin-top: 6px;"><span class="chip chip-danger" id="status-opcua">Terputus</span></div>
+                </div>
+                <label class="protocol-toggle-wrap" title="Aktifkan / Nonaktifkan OPC-UA">
+                  <span class="protocol-toggle-status">Nonaktif</span>
+                  <div class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="opcua-enabled" name="enabled"
+                      style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.protocol-toggle-status').textContent = this.checked ? 'Aktif' : 'Nonaktif'">
+                    <span class="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <form data-api="/api/save-opcua" novalidate>
+                <div class="card-body">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="opcua-endpoint">Endpoint URL</label>
+                      <input type="text" id="opcua-endpoint" name="endpoint" class="form-control"
+                        placeholder="opc.tcp://192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                      <label for="opcua-port">Port</label>
+                      <input type="number" id="opcua-port" name="port" class="form-control" placeholder="4840"
+                        value="4840">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="opcua-node-id">Node ID</label>
+                    <input type="text" id="opcua-node-id" name="node_id" class="form-control" placeholder="ns=2;i=1001">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="opcua-user">Username (opsional)</label>
+                      <input type="text" id="opcua-user" name="username" class="form-control" placeholder="opcua_user"
+                        autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="opcua-pass">Password (opsional)</label>
+                      <input type="password" id="opcua-pass" name="password" class="form-control" placeholder="••••••••"
+                        autocomplete="new-password">
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">💾 Simpan OPC-UA</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Store & Forward Panel -->
+          <div id="tab-storeforward" class="tab-panel" data-tab-panel="integrasi">
+            <div class="card">
+              <div class="protocol-header">
+                <div class="protocol-icon"
+                  style="background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.2);">💾</div>
+                <div style="flex:1;">
+                  <div class="protocol-title">Pengaturan Store & Forward</div>
+                  <div class="protocol-desc">Offline Buffer — Simpan antrean data di memori lokal saat koneksi terputus
+                  </div>
+                </div>
+                <label class="protocol-toggle-wrap" title="Aktifkan / Nonaktifkan Store & Forward">
+                  <span class="protocol-toggle-status">Aktif</span>
+                  <div class="toggle"
+                    style="position:relative; width:48px; height:26px; cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="sf-enabled" name="enabled" checked
+                      style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.protocol-toggle-status').textContent = this.checked ? 'Aktif' : 'Nonaktif'">
+                    <span class="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <form id="form-save-storeforward" data-api="/api/save-storeforward" novalidate>
+                <div class="card-body">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="sf-max-size">Batas Ukuran File Antrean (MB)</label>
+                      <input type="number" id="sf-max-size" name="max_size" class="form-control" placeholder="5"
+                        value="5" min="1" max="100">
+                      <small class="text-muted">Maksimal ukuran file di SD Card sebelum rotasi.</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="sf-batch-size">Jumlah Pengiriman per Batch</label>
+                      <input type="number" id="sf-batch-size" name="batch_size" class="form-control" placeholder="10"
+                        value="10" min="1" max="500">
+                      <small class="text-muted">Banyaknya baris data yang dikirim sekaligus saat online.</small>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sf-delay">Jeda Antar Batch (ms)</label>
+                    <input type="number" id="sf-delay" name="delay_ms" class="form-control" placeholder="2000"
+                      value="2000" min="500">
+                    <small class="text-muted">Mencegah server terkena rate-limit saat pengiriman.</small>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan Buffer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION 4: PENGATURAN HARDWARE
+      ════════════════════════════════════════════════ -->
+        <section id="section-hardware" class="section" aria-label="Pengaturan Hardware">
+          <div class="section-header">
+            <div class="header-accent"></div>
+            <h2>Pengaturan Perangkat Keras</h2>
+            <p>Konfigurasi koneksi jaringan, mapping PIN fisik, dan parameter sensor</p>
+          </div>
+
+          <!-- Hardware Tabs -->
+          <div class="tab-bar" role="tablist">
+            <button class="tab-btn" data-tab-group="hardware" data-tab-target="tab-koneksi">
+              🌐 Pengaturan Koneksi
+            </button>
+            <button class="tab-btn" data-tab-group="hardware" data-tab-target="tab-pin">
+              📌 Pengaturan PIN & Port
+            </button>
+            <button class="tab-btn" data-tab-group="hardware" data-tab-target="tab-sensor">
+              🌡️ Pengaturan Sensor
+            </button>
+            <button class="tab-btn" data-tab-group="hardware" data-tab-target="tab-telekontrol">
+              🎛️ Telekontrol (Aktuator)
+            </button>
+          </div>
+
+          <!-- Koneksi Panel -->
+          <div id="tab-koneksi" class="tab-panel" data-tab-panel="hardware">
+            <div class="grid-2" style="gap:20px;">
+
+              <!-- Mode Jaringan Utama (LTE / Ethernet) -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">🌍</span>
+                    Koneksi Utama
+                  </div>
+                </div>
+                <form data-api="/api/save-network" novalidate>
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="net-main-mode">Pilih Antarmuka Utama</label>
+                      <select id="net-main-mode" name="main_mode" class="form-control">
+                        <option value="lte" selected>4G LTE (SIM7600CE)</option>
+                        <option value="eth">Ethernet (W5500)</option>
+                      </select>
+                    </div>
+
+                    <!-- Panel LTE -->
+                    <div id="panel-net-lte" class="net-panel"
+                      style="padding-top:16px; border-top:1px solid var(--border); margin-top:16px;">
+                      <h4 style="margin-bottom:12px; font-size:14px; font-weight:600; color:var(--text);">Konfigurasi
+                        LTE / 4G</h4>
+                      <div class="form-group">
+                        <label for="lte-apn">Nama APN</label>
+                        <input type="text" id="lte-apn" name="lte_apn" class="form-control" placeholder="internet"
+                          value="internet">
+                      </div>
+                      <div class="form-group">
+                        <label for="lte-user">Username APN</label>
+                        <input type="text" id="lte-user" name="lte_user" class="form-control"
+                          placeholder="(kosongkan jika tidak ada)">
+                      </div>
+                      <div class="form-group">
+                        <label for="lte-pass">Password APN</label>
+                        <input type="password" id="lte-pass" name="lte_pass" class="form-control"
+                          placeholder="(kosongkan jika tidak ada)" autocomplete="new-password">
+                      </div>
+                      <div class="form-group">
+                        <label for="lte-band">Band LTE (opsional)</label>
+                        <select id="lte-band" name="lte_band" class="form-control">
+                          <option value="auto">Auto</option>
+                          <option value="1">Band 1 (2100 MHz)</option>
+                          <option value="3">Band 3 (1800 MHz)</option>
+                          <option value="5">Band 5 (850 MHz)</option>
+                          <option value="40">Band 40 (2300 MHz)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Panel Ethernet -->
+                    <div id="panel-net-eth" class="net-panel"
+                      style="display:none; padding-top:16px; border-top:1px solid var(--border); margin-top:16px;">
+                      <h4 style="margin-bottom:12px; font-size:14px; font-weight:600; color:var(--text);">Konfigurasi
+                        Ethernet W5500</h4>
+                      <div class="form-group" style="margin-bottom:8px;">
+                        <label>Mode IP Address</label>
+                        <div class="flex gap-8" style="gap:10px; margin-top:6px;">
+                          <label class="flex items-center gap-8" style="gap:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" id="eth-ip-dhcp" name="eth_ip_mode" value="dhcp" checked
+                              style="accent-color:var(--cyan);">
+                            <span>DHCP Otomatis</span>
+                          </label>
+                          <label class="flex items-center gap-8" style="gap:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" id="eth-ip-static-opt" name="eth_ip_mode" value="static"
+                              style="accent-color:var(--cyan);">
+                            <span>IP Statis</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div id="eth-static-fields" style="display:none;">
+                        <div class="form-group" style="margin-bottom:10px;">
+                          <label for="eth-ip-static">IP Address</label>
+                          <input type="text" id="eth-ip-static" name="eth_ip" class="form-control"
+                            placeholder="Contoh: 192.168.1.100">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                          <div class="form-group">
+                            <label for="eth-gw">Gateway</label>
+                            <input type="text" id="eth-gw" name="eth_gateway" class="form-control"
+                              placeholder="192.168.1.1">
+                          </div>
+                          <div class="form-group">
+                            <label for="eth-sn">Subnet Mask</label>
+                            <input type="text" id="eth-sn" name="eth_subnet" class="form-control"
+                              placeholder="255.255.255.0">
+                          </div>
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                          <label for="eth-dns">DNS Server (Opsional)</label>
+                          <input type="text" id="eth-dns" name="eth_dns" class="form-control" placeholder="8.8.8.8">
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">💾 Simpan Konfigurasi</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- WiFi -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">📶</span>
+                    Koneksi Wi-Fi
+                  </div>
+                  <span class="chip chip-emerald">802.11 b/g/n</span>
+                </div>
+                <form id="form-wifi" data-api="/api/save-network" novalidate>
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="wifi-mode">Mode Wi-Fi</label>
+                      <select id="wifi-mode" name="wifi_mode" class="form-control">
+                        <option value="ap" selected>Access Point (AP)</option>
+                        <option value="sta">Station / Client (STA)</option>
+                        <option value="apsta">AP + Station</option>
+                      </select>
+                    </div>
+
+                    <!-- SSID row with Scan button — hanya tampil di mode STA / APSTA -->
+                    <div class="form-group" id="wifi-ssid-group">
+                      <label for="wifi-ssid-inp">SSID Wi-Fi</label>
+                      <div class="flex gap-8" style="gap:8px; align-items:stretch;">
+                        <input type="text" id="wifi-ssid-inp" name="wifi_ssid" class="form-control"
+                          placeholder="Nama jaringan" value="Molinar_AP_01" spellcheck="false" style="flex:1;">
+                        <button type="button" id="btn-wifi-scan" class="btn btn-secondary"
+                          style="display:none; white-space:nowrap; padding:0 16px;">
+                          🔍 Scan
+                        </button>
+                      </div>
+                      <!-- Dropdown hasil scan -->
+                      <div id="wifi-scan-results"
+                        style="display:none; margin-top:8px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card-bg);">
+                        <div id="wifi-scan-list" style="max-height:220px; overflow-y:auto;"></div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="wifi-pass">Password Wi-Fi</label>
+                      <input type="password" id="wifi-pass" name="wifi_password" class="form-control"
+                        placeholder="Minimal 8 karakter" autocomplete="new-password">
+                    </div>
+
+                    <!-- IP Mode — hanya di STA / APSTA -->
+                    <div id="wifi-ip-group" style="display:none;">
+                      <div class="form-group" style="margin-bottom:8px;">
+                        <label>Mode IP Address</label>
+                        <div class="flex gap-8" style="gap:10px; margin-top:6px;">
+                          <label class="flex items-center gap-8" style="gap:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" id="wifi-ip-dhcp" name="wifi_ip_mode" value="dhcp" checked
+                              style="accent-color:var(--cyan);">
+                            <span>DHCP Otomatis</span>
+                          </label>
+                          <label class="flex items-center gap-8" style="gap:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" id="wifi-ip-static-opt" name="wifi_ip_mode" value="static"
+                              style="accent-color:var(--cyan);">
+                            <span>IP Statis</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div id="wifi-static-fields" style="display:none;">
+                        <div class="form-group" style="margin-bottom:10px;">
+                          <label for="wifi-ip-static">IP Address</label>
+                          <input type="text" id="wifi-ip-static" name="wifi_ip" class="form-control"
+                            placeholder="Contoh: 192.168.1.100">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                          <div class="form-group">
+                            <label for="wifi-gw">Gateway</label>
+                            <input type="text" id="wifi-gw" name="wifi_gateway" class="form-control"
+                              placeholder="192.168.1.1">
+                          </div>
+                          <div class="form-group">
+                            <label for="wifi-sn">Subnet Mask</label>
+                            <input type="text" id="wifi-sn" name="wifi_subnet" class="form-control"
+                              placeholder="255.255.255.0">
+                          </div>
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                          <label for="wifi-dns">DNS Server (Opsional)</label>
+                          <input type="text" id="wifi-dns" name="wifi_dns" class="form-control" placeholder="8.8.8.8">
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">💾 Simpan Wi-Fi</button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- PIN Panel -->
+          <div id="tab-pin" class="tab-panel" data-tab-panel="hardware">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">📌</span>
+                  Pemetaan Terminal & Port
+                </div>
+              </div>
+              <div class="card-body">
+
+                <!-- KF301 -->
+                <div class="mb-24">
+                  <div class="flex items-center justify-between mb-24" style="margin-bottom:14px;">
+                    <div>
+                      <div class="fw-700 text-sm">Terminal KF301</div>
+                      <div class="text-xs text-muted" style="margin-top:3px;">UART · RS485 Modbus</div>
+                    </div>
+                    <span class="chip chip-cyan">2-Pin Block</span>
+                  </div>
+                  <div class="pin-grid">
+                    <div class="pin-card" id="pin-card-kf301-uart">
+                      <div class="pin-label">KF301 — Pin 1</div>
+                      <div class="pin-name">UART</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf301-uart" name="kf301_uart">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="pin-card" id="pin-card-kf301-rs485">
+                      <div class="pin-label">KF301 — Pin 2</div>
+                      <div class="pin-name">RS485 (Modbus)</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf301-rs485" name="kf301_rs485">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- KF350 -->
+                <div>
+                  <div class="flex items-center justify-between" style="margin-bottom:14px;">
+                    <div>
+                      <div class="fw-700 text-sm">Terminal KF350</div>
+                      <div class="text-xs text-muted" style="margin-top:3px;">ADC · I2C · 4-20mA · Digital IO</div>
+                    </div>
+                    <span class="chip chip-emerald">Multi-Pin Block</span>
+                  </div>
+                  <div class="pin-grid">
+                    <div class="pin-card" id="pin-card-kf350-adc">
+                      <div class="pin-label">KF350 — Pin A</div>
+                      <div class="pin-name">ADC Input</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf350-adc" name="kf350_adc">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="pin-card" id="pin-card-kf350-i2c">
+                      <div class="pin-label">KF350 — Pin B</div>
+                      <div class="pin-name">I2C (SDA/SCL)</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf350-i2c" name="kf350_i2c">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="pin-card" id="pin-card-kf350-current420">
+                      <div class="pin-label">KF350 — Pin C</div>
+                      <div class="pin-name">4-20 mA</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf350-current420" name="kf350_current420">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="pin-card" id="pin-card-kf350-io">
+                      <div class="pin-label">KF350 — Pin D</div>
+                      <div class="pin-name">Digital IO</div>
+                      <label class="toggle toggle-wrap">
+                        <input type="checkbox" id="pin-kf350-io" name="kf350_io">
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <p class="text-xs text-muted flex-1">Aktifkan port yang terhubung secara fisik pada perangkat.</p>
+                <button id="btn-save-pins" class="btn btn-primary">💾 Simpan Konfigurasi PIN</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sensor Panel (Dynamic) -->
+          <div id="tab-sensor" class="tab-panel" data-tab-panel="hardware">
+
+            <!-- Sub-Tab Navigation -->
+            <div class="sub-tab-bar" role="tablist">
+              <button class="sub-tab-btn active" data-sub-target="sub-modbus">
+                🔌 Modbus RTU (KF301)
+              </button>
+              <button class="sub-tab-btn" data-sub-target="sub-kf350">
+                📊 Analog & IO (KF350)
+              </button>
+            </div>
+
+            <!-- Modbus RTU (KF301) Sub-Tab -->
+            <div id="sub-modbus" class="sub-tab-panel active">
+              <!-- Global Serial Settings -->
+              <div class="card mb-24">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">🔌</span>
+                    Konfigurasi Serial RS485
+                  </div>
+                  <span class="chip chip-cyan">Global KF301</span>
+                </div>
+                <form id="form-serial-rs485" data-api="/api/save-sensor" novalidate>
+                  <div class="card-body">
+                    <div class="form-row-3">
+                      <div class="form-group">
+                        <label for="rs485-baud">Baudrate</label>
+                        <select id="rs485-baud" name="baud" class="form-control">
+                          <option value="4800">4800</option>
+                          <option value="9600" selected>9600</option>
+                          <option value="19200">19200</option>
+                          <option value="38400">38400</option>
+                          <option value="115200">115200</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="rs485-parity">Parity</label>
+                        <select id="rs485-parity" name="parity" class="form-control">
+                          <option value="N" selected>None</option>
+                          <option value="E">Even</option>
+                          <option value="O">Odd</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="rs485-stop">Stop Bits</label>
+                        <select id="rs485-stop" name="stop_bits" class="form-control">
+                          <option value="1" selected>1</option>
+                          <option value="2">2</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">💾 Simpan Konfigurasi Serial</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Add Parameter Form -->
+              <div class="card mb-24">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">➕</span>
+                    Tambah Parameter Modbus
+                  </div>
+                </div>
+                <form id="form-add-modbus-param" novalidate>
+                  <div class="card-body">
+                    <div class="form-row-3">
+                      <div class="form-group">
+                        <label for="modbus-param-name">Nama Parameter</label>
+                        <input type="text" id="modbus-param-name" class="form-control" placeholder="Suhu Sensor XY-MD02"
+                          required>
+                      </div>
+                      <div class="form-group">
+                        <label for="modbus-unit">Satuan (Unit)</label>
+                        <input type="text" id="modbus-unit" class="form-control" placeholder="°C, %, ppm, dll.">
+                      </div>
+                      <div class="form-group">
+                        <label for="modbus-slave-id">Slave ID</label>
+                        <input type="number" id="modbus-slave-id" class="form-control" min="1" max="247" value="1"
+                          required>
+                      </div>
+                    </div>
+                    <div class="form-row-3">
+                      <div class="form-group">
+                        <label for="modbus-fc">Function Code</label>
+                        <select id="modbus-fc" class="form-control">
+                          <option value="01">01 Read Coils</option>
+                          <option value="02">02 Read Discrete</option>
+                          <option value="03">03 Read Holding Registers</option>
+                          <option value="04" selected>04 Read Input Registers</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="modbus-reg">Alamat Register</label>
+                        <input type="text" id="modbus-reg" class="form-control" placeholder="1 atau 0x0001" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="modbus-type">Tipe Data</label>
+                        <select id="modbus-type" class="form-control">
+                          <option value="Int16" selected>Int16</option>
+                          <option value="UInt16">UInt16</option>
+                          <option value="Int32">Int32</option>
+                          <option value="Float32">Float32</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row-2">
+                      <div class="form-group" style="grid-column: span 2;">
+                        <label for="modbus-polling">Interval Polling (ms)</label>
+                        <input type="number" id="modbus-polling" class="form-control" placeholder="5000" value="5000">
+                      </div>
+                      <div class="form-group" style="grid-column: span 2;">
+                        <label style="display:flex; align-items:center; gap:8px;">
+                          <input type="checkbox" id="modbus-show-chart"> Tampilkan di Grafik Sensor
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="form-section-title">Kalibrasi Data (Opsional)</div>
+                    <div class="form-row-2">
+                      <div class="form-group">
+                        <label>METODE KALIBRASI</label>
+                        <select class="form-control calib-method" id="modbus-calib-method">
+                          <option value="linear">Linear (Offset & Gain)</option>
+                          <option value="custom">Formula Kustom (Math Expression)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row-2 calib-linear-group" id="modbus-calib-linear">
+                      <div class="form-group">
+                        <label>MULTIPLIER / GAIN (m)</label>
+                        <input type="number" step="any" class="form-control calib-m" id="modbus-calib-m" value="1"
+                          placeholder="Misal: 1.0">
+                        <div class="form-text">Pengali nilai raw (y = <b>m</b>x + c)</div>
+                      </div>
+                      <div class="form-group">
+                        <label>OFFSET (c)</label>
+                        <input type="number" step="any" class="form-control calib-c" id="modbus-calib-c" value="0"
+                          placeholder="Misal: 0">
+                        <div class="form-text">Penambah nilai raw (y = mx + <b>c</b>)</div>
+                      </div>
+                    </div>
+                    <div class="form-row-1 calib-custom-group" id="modbus-calib-custom" style="display:none;">
+                      <div class="form-group">
+                        <label>RUMUS MATEMATIKA</label>
+                        <input type="text" class="form-control calib-formula" id="modbus-calib-formula"
+                          placeholder="sqrt(x^2 + 15.5) / 2">
+                        <div class="form-text text-muted" style="margin-top: 8px;">
+                          <b>Cheat Sheet Operator:</b><br>
+                          • Dasar: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">+</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">-</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">*</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">/</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">%</code><br>
+                          • Pangkat & Akar: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">x^2</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">sqrt(x)</code><br>
+                          • Lanjutan: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">log(x)</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">sin(x)</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">abs(x)</code><br>
+                          • Variabel utama: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">x</code>
+                          (Nilai sensor mentah)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-emerald" id="btn-modbus-submit">➕ Tambah Parameter</button>
+                    <button type="button" class="btn btn-danger" id="btn-modbus-cancel-edit" style="display:none;"
+                      onclick="SensorManager.cancelEditModbus()">✖ Batal Edit</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Active Registers Table -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">📋</span>
+                    Daftar Parameter Aktif
+                  </div>
+                </div>
+                <div class="card-body" style="padding-top:0; padding-bottom:0;">
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Nama Parameter</th>
+                          <th>ID</th>
+                          <th>FC</th>
+                          <th>Register</th>
+                          <th>Tipe</th>
+                          <th>Polling</th>
+                          <th style="width:15%;">Kalibrasi</th>
+                          <th>Nilai</th>
+                          <th style="text-align:right;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-modbus-body">
+                        <!-- Rendered by JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="button" id="btn-save-modbus-all" class="btn btn-primary">💾 Simpan Semua Modbus ke
+                    Perangkat</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Analog & IO (KF350) Sub-Tab -->
+            <div id="sub-kf350" class="sub-tab-panel" style="display:none;">
+              <div class="card mb-24">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">🎛️</span>
+                    Pengaturan Port Spesifik (Terminal KF350)
+                  </div>
+                  <span class="chip chip-emerald">Multi-Port</span>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="kf350-interface-type">Pilih Jenis Antarmuka</label>
+                    <select id="kf350-interface-type" class="form-control">
+                      <option value="" disabled selected>-- Pilih Antarmuka --</option>
+                      <option value="analog">Analog & 4-20mA (ADC 16-bit)</option>
+                      <option value="digital">IO Digital</option>
+                      <option value="i2c">I2C (SDA/SCL)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form A: Analog -->
+              <div id="form-kf350-analog" class="card mb-24 kf350-dynamic-form" style="display:none;">
+                <div class="card-header">
+                  <div class="card-title">➕ Tambah Sensor Analog / 4-20mA</div>
+                </div>
+                <form id="form-add-kf350-analog" novalidate>
+                  <div class="card-body">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="ana-name">Nama Parameter</label>
+                        <input type="text" id="ana-name" class="form-control" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="ana-port">Channel Port</label>
+                        <select id="ana-port" class="form-control">
+                          <option value="ADS1115 A0">ADS1115 A0 (16-bit)</option>
+                          <option value="ADS1115 A1">ADS1115 A1 (16-bit)</option>
+                          <option value="ADS1115 A2">ADS1115 A2 (4-20mA)</option>
+                          <option value="ADS1115 A3">ADS1115 A3 (4-20mA)</option>
+                          <option value="ESP32 A1">ESP32 Analog 1 (Pin 1)</option>
+                          <option value="ESP32 A2">ESP32 Analog 2 (Pin 2)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+                      <div class="form-group">
+                        <label for="ana-raw-min">Raw ADC Min</label>
+                        <input type="number" id="ana-raw-min" class="form-control" value="0" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="ana-raw-max">Raw ADC Max</label>
+                        <input type="number" id="ana-raw-max" class="form-control" value="65535" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="ana-act-min">Skala Akt. Min</label>
+                        <input type="number" id="ana-act-min" class="form-control" value="0" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="ana-act-max">Skala Akt. Max</label>
+                        <input type="number" id="ana-act-max" class="form-control" value="100" required>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="ana-unit">Satuan / Unit</label>
+                      <input type="text" id="ana-unit" class="form-control" placeholder="Bar, Meter, Psi">
+                    </div>
+
+                    <div class="form-section-title">Kalibrasi Data (Opsional)</div>
+                    <div class="form-row-2">
+                      <div class="form-group">
+                        <label>METODE KALIBRASI</label>
+                        <select class="form-control calib-method" id="kf350-calib-method">
+                          <option value="linear">Linear (Offset & Gain)</option>
+                          <option value="custom">Formula Kustom (Math Expression)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row-2 calib-linear-group" id="kf350-calib-linear">
+                      <div class="form-group">
+                        <label>MULTIPLIER / GAIN (m)</label>
+                        <input type="number" step="any" class="form-control calib-m" id="kf350-calib-m" value="1"
+                          placeholder="Misal: 1.0">
+                        <div class="form-text">Pengali nilai raw (y = <b>m</b>x + c)</div>
+                      </div>
+                      <div class="form-group">
+                        <label>OFFSET (c)</label>
+                        <input type="number" step="any" class="form-control calib-c" id="kf350-calib-c" value="0"
+                          placeholder="Misal: 0">
+                        <div class="form-text">Penambah nilai raw (y = mx + <b>c</b>)</div>
+                      </div>
+                    </div>
+                    <div class="form-row-1 calib-custom-group" id="kf350-calib-custom" style="display:none;">
+                      <div class="form-group">
+                        <label>RUMUS MATEMATIKA</label>
+                        <input type="text" class="form-control calib-formula" id="kf350-calib-formula"
+                          placeholder="sqrt(x^2 + 15.5) / 2">
+                        <div class="form-text text-muted" style="margin-top: 8px;">
+                          <b>Cheat Sheet Operator:</b><br>
+                          • Dasar: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">+</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">-</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">*</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">/</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">%</code><br>
+                          • Pangkat & Akar: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">x^2</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">sqrt(x)</code><br>
+                          • Lanjutan: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">log(x)</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">sin(x)</code>,
+                          <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">abs(x)</code><br>
+                          • Variabel utama: <code
+                            style="font-family:var(--font-mono); background:var(--bg-lighter); padding:2px 4px; border-radius:4px;">x</code>
+                          (Nilai sensor mentah)
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row-1" style="margin-top: 16px;">
+                      <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px;">
+                          <input type="checkbox" id="kf350-ana-show-chart" checked> Tampilkan di Grafik Sensor
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-emerald">➕ Tambah Sensor Analog</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Form B: IO Digital -->
+              <div id="form-kf350-digital" class="card mb-24 kf350-dynamic-form" style="display:none;">
+                <div class="card-header">
+                  <div class="card-title">➕ Tambah IO Digital</div>
+                </div>
+                <form id="form-add-kf350-digital" novalidate>
+                  <div class="card-body">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="dig-name">Nama Parameter</label>
+                        <input type="text" id="dig-name" class="form-control" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="dig-port">Channel Port</label>
+                        <select id="dig-port" class="form-control">
+                          <option value="ESP32 D14">ESP32 Digital (Pin 14)</option>
+                          <option value="ESP32 D38">ESP32 Digital (Pin 38)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="dig-mode">Mode Pin</label>
+                        <select id="dig-mode" class="form-control">
+                          <option value="Input Status">Input Status</option>
+                          <option value="Output Control">Output Control</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="dig-logic">Logika Normal</label>
+                        <select id="dig-logic" class="form-control">
+                          <option value="Active High">Active High</option>
+                          <option value="Active Low">Active Low</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row-1" style="margin-top: 16px;">
+                      <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px;">
+                          <input type="checkbox" id="kf350-dig-show-chart" checked> Tampilkan di Grafik Sensor
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-emerald">➕ Tambah IO Digital</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Form C: I2C -->
+              <div id="form-kf350-i2c" class="card mb-24 kf350-dynamic-form" style="display:none;">
+                <div class="card-header">
+                  <div class="card-title">➕ Tambah Sensor I2C</div>
+                </div>
+                <form id="form-add-kf350-i2c" novalidate>
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="i2c-name">Nama Parameter</label>
+                      <input type="text" id="i2c-name" class="form-control" required>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="i2c-address">Alamat I2C (Hex Address)</label>
+                        <input type="text" id="i2c-address" class="form-control" placeholder="0x76" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="i2c-profile">Profil Sensor</label>
+                        <select id="i2c-profile" class="form-control">
+                          <option value="BME280-Suhu">BME280-Suhu</option>
+                          <option value="BME280-Kelembapan">BME280-Kelembapan</option>
+                          <option value="ADS1115-Raw">ADS1115-Raw</option>
+                          <option value="Custom Register">Custom Register</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="i2c-unit">Satuan (Unit)</label>
+                        <input type="text" id="i2c-unit" class="form-control" placeholder="Contoh: °C, %RH, Lux">
+                      </div>
+                      <div class="form-group">
+                        <label for="i2c-calib">Kalibrasi Data (Opsional)</label>
+                        <input type="text" id="i2c-calib" class="form-control" placeholder="Contoh: x * 1.0 + 0">
+                      </div>
+                    </div>
+                    <div class="form-row-1" style="margin-top: 16px;">
+                      <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px;">
+                          <input type="checkbox" id="kf350-i2c-show-chart" checked> Tampilkan di Grafik Sensor
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <button type="submit" class="btn btn-emerald">➕ Tambah Sensor I2C</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Active Sensors Table KF350 -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">📋</span>
+                    Daftar Sensor KF350 Aktif
+                  </div>
+                </div>
+                <div class="card-body" style="padding-top:0; padding-bottom:0;">
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Tipe</th>
+                          <th>Nama Parameter</th>
+                          <th>Detail</th>
+                          <th style="width:15%;">Kalibrasi</th>
+                          <th>Nilai</th>
+                          <th style="text-align:right;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-kf350-body">
+                        <!-- Rendered by JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="button" id="btn-save-kf350-all" class="btn btn-primary">💾 Simpan Semua KF350 ke
+                    Perangkat</button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Telekontrol Panel -->
+          <div id="tab-telekontrol" class="tab-panel" data-tab-panel="hardware">
+            <div class="card mb-24">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">🎛️</span>
+                  Daftar Aktuator (Telekontrol Modbus)
+                </div>
+                <button type="button" id="btn-add-telekontrol" class="btn btn-secondary btn-sm">➕ Tambah
+                  Aktuator</button>
+              </div>
+              <div class="card-body" style="padding-top:0; padding-bottom:0;">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID (Key)</th>
+                        <th>Nama Aktuator</th>
+                        <th>Slave ID</th>
+                        <th>FC (Write)</th>
+                        <th>Alamat Reg</th>
+                        <th>Tipe</th>
+                        <th style="width: 120px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-telekontrol-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="button" id="btn-save-telekontrol-all" class="btn btn-primary">💾 Simpan Konfigurasi
+                  Telekontrol</button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION: TELEKONTROL (PANEL KONTROL)
+      ════════════════════════════════════════════════ -->
+        <section id="section-telekontrol" class="section" aria-label="Panel Kontrol">
+          <div class="section-header">
+            <div class="header-accent" style="background: var(--purple)"></div>
+            <h2>Panel Kontrol Aktuator</h2>
+            <p>Kendalikan perangkat output seperti relay (DO) dan analog out (AO) secara langsung.</p>
+          </div>
+
+          <div id="telekontrol-cards"
+            style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <!-- Di-render dinamis oleh app.js -->
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION: OTOMASI
+      ════════════════════════════════════════════════ -->
+        <section id="section-otomasi" class="section" aria-label="Otomasi">
+          <div class="section-header">
+            <div class="header-accent" style="background: var(--amber)"></div>
+            <h2>⚙️ Otomasi</h2>
+            <p>Buat aturan "Jika... Maka..." dan "Jadwal" yang berjalan mandiri di dalam perangkat tanpa koneksi cloud.</p>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+            <button id="btn-add-automation-rule" class="btn btn-emerald">+ Tambah Aturan</button>
+          </div>
+
+          <div id="automation-rules-list">
+            <!-- Dirender dinamis oleh AutomationManager di app.js -->
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════
+           MODAL: FORM OTOMASI
+      ════════════════════════════════════════════════ -->
+        <div id="automation-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true"
+          aria-labelledby="automation-modal-title" style="display:none;">
+          <div class="modal" style="max-width:640px; width:95%; max-height:90vh; overflow-y:auto;">
+            <div class="modal-icon">⚙️</div>
+            <h3 id="automation-modal-title">Tambah Aturan Otomasi</h3>
+
+            <!-- Nama & Tipe -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="auto-name">Nama Aturan</label>
+                <input type="text" id="auto-name" class="form-control" placeholder="Contoh: Pompa Air Otomatis">
+              </div>
+              <div class="form-group">
+                <label for="auto-rule-type">Tipe Aturan</label>
+                <select id="auto-rule-type" class="form-control">
+                  <option value="sensor">🔍 Kondisi Sensor</option>
+                  <option value="schedule">🕐 Timer & Jadwal</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="auto-cooldown">Cooldown (detik) — Jeda minimum antar eksekusi</label>
+              <input type="number" id="auto-cooldown" class="form-control" value="30" min="0">
+            </div>
+
+            <!-- Panel: Kondisi Sensor -->
+            <div id="auto-sensor-panel">
+              <div style="margin:16px 0 8px; font-weight:600; font-size:12px; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase;">
+                Kondisi Sensor (maks. 3, semua harus terpenuhi)
+              </div>
+              <div id="auto-conditions-container"></div>
+              <button id="btn-add-condition" class="btn btn-secondary" style="margin-top:8px; font-size:12px; padding:6px 14px;">
+                + Tambah Kondisi
+              </button>
+            </div>
+
+            <!-- Panel: Jadwal -->
+            <div id="auto-schedule-panel" style="display:none;">
+              <div style="margin:16px 0 8px; font-weight:600; font-size:12px; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase;">
+                Jadwal Eksekusi
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="auto-sched-hour">Jam (0–23)</label>
+                  <input type="number" id="auto-sched-hour" class="form-control" min="0" max="23" value="6">
+                </div>
+                <div class="form-group">
+                  <label for="auto-sched-minute">Menit (0–59)</label>
+                  <input type="number" id="auto-sched-minute" class="form-control" min="0" max="59" value="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Hari Aktif <span style="font-weight:400; color:var(--text-muted);">(kosongkan = setiap hari)</span></label>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;">
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="1" class="auto-day-chk"> Senin</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="2" class="auto-day-chk"> Selasa</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="3" class="auto-day-chk"> Rabu</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="4" class="auto-day-chk"> Kamis</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="5" class="auto-day-chk"> Jumat</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="6" class="auto-day-chk"> Sabtu</label>
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;"><input type="checkbox" value="0" class="auto-day-chk"> Minggu</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Aksi -->
+            <div style="margin:20px 0 8px; font-weight:600; font-size:12px; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase;">
+              Aksi (Telekontrol)
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="auto-action-actuator">Pilih Relay / Aktuator</label>
+                <select id="auto-action-actuator" class="form-control">
+                  <option value="">— Memuat aktuator... —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="auto-action-command">Perintah</label>
+                <select id="auto-action-command" class="form-control">
+                  <option value="65280">ON — Aktifkan Relay</option>
+                  <option value="0">OFF — Matikan Relay</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="btn btn-secondary" id="btn-automation-modal-cancel">Batal</button>
+              <button class="btn btn-primary" id="btn-automation-modal-save">💾 Simpan Aturan</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════
+           SECTION 5: MANAJEMEN SISTEM
+      ════════════════════════════════════════════════ -->
+        <section id="section-sistem" class="section" aria-label="Manajemen Sistem">
+          <div class="section-header">
+            <div class="header-accent"></div>
+            <h2>Manajemen Sistem</h2>
+            <p>Kelola pengguna, bahasa, backup konfigurasi, dan aksi sistem</p>
+          </div>
+
+          <!-- System Tabs -->
+          <div class="tab-bar" role="tablist">
+            <button class="tab-btn" data-tab-group="sistem" data-tab-target="tab-users">
+              👥 Pengguna
+            </button>
+            <button class="tab-btn" data-tab-group="sistem" data-tab-target="tab-language">
+              🌐 Bahasa
+            </button>
+            <button class="tab-btn" data-tab-group="sistem" data-tab-target="tab-backup">
+              💾 Backup & Restore
+            </button>
+            <button class="tab-btn" data-tab-group="sistem" data-tab-target="tab-actions">
+              ⚡ Aksi Sistem
+            </button>
+          </div>
+
+          <!-- Users Panel -->
+          <div id="tab-users" class="tab-panel" data-tab-panel="sistem">
+            <div class="card mb-24">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">👥</span>
+                  Daftar Pengguna
+                </div>
+              </div>
+              <div class="card-body" style="padding-top:0; padding-bottom:0;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th style="text-align:right;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-table-body">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Add User Form -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">➕</span>
+                  Tambah Pengguna Baru
+                </div>
+              </div>
+              <form id="form-add-user" novalidate>
+                <div class="card-body">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="new-username">Username Baru</label>
+                      <input type="text" id="new-username" name="username" class="form-control"
+                        placeholder="Masukkan username" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="new-password">Password</label>
+                      <input type="password" id="new-password" name="password" class="form-control"
+                        placeholder="Min. 6 karakter" autocomplete="new-password">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="new-role">Role</label>
+                    <select id="new-role" name="role" class="form-control">
+                      <option value="viewer">Viewer (Hanya lihat Dashboard & Log)</option>
+                      <option value="admin">Admin (Akses penuh)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">➕ Tambah Pengguna</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Language Panel -->
+          <div id="tab-language" class="tab-panel" data-tab-panel="sistem">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">🌐</span>
+                  Pengaturan Bahasa Interface
+                </div>
+              </div>
+              <div class="card-body">
+                <p class="text-sm text-muted" style="margin-bottom:24px;">
+                  Pilih bahasa yang digunakan di seluruh antarmuka web konfigurasi Logger Molinar.
+                </p>
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                  <button class="btn btn-primary active" data-lang-btn="id" id="lang-btn-id">
+                    🇮🇩 Bahasa Indonesia
+                  </button>
+                  <button class="btn btn-secondary" data-lang-btn="en" id="lang-btn-en">
+                    🇬🇧 English
+                  </button>
+                </div>
+                <p class="text-xs text-muted" style="margin-top:16px; font-family: var(--font-mono);">
+                  Bahasa aktif saat ini: <span id="current-lang-display" style="color:var(--cyan);">Indonesia</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Backup & Restore Panel -->
+          <div id="tab-backup" class="tab-panel" data-tab-panel="sistem">
+            <div class="grid-2" style="gap:20px;">
+
+              <!-- Backup -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">⬆️</span>
+                    Backup Konfigurasi
+                  </div>
+                </div>
+                <div class="card-body">
+                  <p class="text-sm text-muted" style="margin-bottom:20px; line-height:1.7;">
+                    Ekspor seluruh konfigurasi perangkat (MQTT, Webhook, jaringan, PIN, pengguna) ke dalam satu file
+                    <code style="color:var(--cyan); font-family:var(--font-mono);">config_molinar.json</code>.
+                  </p>
+                  <div
+                    style="background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:20px;">
+                    <div class="text-xs text-muted font-mono" style="line-height:1.8;">
+                      ✅ Konfigurasi Jaringan (LTE + WiFi)<br>
+                      ✅ Protokol Integrasi (MQTT, Webhook, REST, OPC-UA)<br>
+                      ✅ Mapping PIN & Parameter Sensor<br>
+                      ✅ Daftar Pengguna
+                    </div>
+                  </div>
+                  <button id="btn-backup" class="btn btn-emerald btn-block">
+                    ⬆️ Unduh config_molinar.json
+                  </button>
+                </div>
+              </div>
+
+              <!-- Restore -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">⬇️</span>
+                    Restore Konfigurasi
+                  </div>
+                </div>
+                <div class="card-body">
+                  <p class="text-sm text-muted" style="margin-bottom:20px; line-height:1.7;">
+                    Unggah file <code
+                      style="color:var(--cyan); font-family:var(--font-mono);">config_molinar.json</code> untuk
+                    memulihkan konfigurasi yang sebelumnya di-backup. Semua pengaturan akan ditimpa secara otomatis.
+                  </p>
+                  <div
+                    style="border:2px dashed var(--border); border-radius:var(--radius-sm); padding:28px; text-align:center; margin-bottom:20px; transition: var(--transition);">
+                    <div style="font-size:32px; margin-bottom:10px;">📂</div>
+                    <p class="text-sm text-muted" style="margin-bottom:14px;">Klik untuk memilih file JSON</p>
+                    <label for="btn-restore-file" class="btn btn-amber"
+                      style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                      📁 Pilih File JSON
+                    </label>
+                    <input type="file" id="btn-restore-file" accept=".json" style="display:none;">
+                  </div>
+                  <p class="text-xs text-muted" style="font-family:var(--font-mono); text-align:center;">
+                    ⚠️ Hanya file .json dari perangkat Molinar yang valid
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- System Actions Panel -->
+          <div id="tab-actions" class="tab-panel" data-tab-panel="sistem">
+            <!-- Diagnostik Jaringan -->
+            <div class="card" style="margin-bottom:24px;">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-icon">🔍</span>
+                  Diagnostik Jaringan
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="form-group" style="max-width:350px;">
+                  <label>Uji Koneksi Internet (ICMP Ping)</label>
+                  <div style="display:flex; gap:10px;">
+                    <input type="text" id="ping-host" class="form-control" value="8.8.8.8" placeholder="IP atau Domain">
+                    <button type="button" class="btn btn-secondary" onclick="window.pingTest()">Ping</button>
+                  </div>
+                  <div id="ping-result" style="margin-top:10px; font-weight:500; font-size:14px;"></div>
+                </div>
+              </div>
+
+              <!-- Update Firmware OTA -->
+              <div class="card" style="margin-bottom:24px;">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">☁️</span>
+                    Pembaruan Firmware (OTA)
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="form-group" style="max-width:400px;">
+                    <label>Pilih File (.bin)</label>
+                    <div style="display:flex; gap:15px; margin-bottom:10px;">
+                      <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="radio" name="ota_type" value="fw" checked> Firmware
+                      </label>
+                      <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="radio" name="ota_type" value="fs"> Web (Ui/Ux)
+                      </label>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                      <input type="file" id="ota-file" class="form-control" accept=".bin" style="padding: 6px;">
+                      <button type="button" class="btn btn-primary" onclick="window.startOTAUpdate()">Unggah</button>
+                    </div>
+
+                    <!-- Progress Bar Container (Hidden by default) -->
+                    <div id="ota-progress-container" style="display:none; margin-top:15px;">
+                      <div
+                        style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px; font-weight:500;">
+                        <span>Proses Unggah...</span>
+                        <span id="ota-progress-text">0%</span>
+                      </div>
+                      <div style="width:100%; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                        <div id="ota-progress-bar"
+                          style="width:0%; height:100%; background:#10b981; transition:width 0.2s;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-grid">
+
+                <!-- Edit Logger Name -->
+                <div class="action-card" id="btn-edit-logger-name">
+                  <span class="action-icon">✏️</span>
+                  <h4>Edit Nama Logger</h4>
+                  <p>Ubah identitas perangkat ini yang akan dikirim ke Cloud Server.</p>
+                </div>
+
+
+                <!-- Time Settings -->
+                <div class="action-card" id="btn-edit-time">
+                  <span class="action-icon">🕐</span>
+                  <h4>Pengaturan Waktu & Zona</h4>
+                  <p>Atur Zona Waktu (GMT) dan sinkronkan RTC sesuai lokasi negara Anda.</p>
+                </div>
+
+
+
+                <!-- Reboot -->
+                <div class="action-card" id="btn-reboot">
+                  <span class="action-icon">🔄</span>
+                  <h4>Reboot Perangkat</h4>
+                  <p>Restart sistem MLR-S3. Koneksi akan terputus sesaat.</p>
+                </div>
+
+                <!-- Format SD -->
+                <div class="action-card" id="btn-format-sd" style="border-color: rgba(255,71,87,0.2);">
+                  <span class="action-icon">💾</span>
+                  <h4>Format MicroSD</h4>
+                  <p class="text-red" style="font-size:11px; margin-top:4px;">⚠️ Semua data akan dihapus permanen.</p>
+                </div>
+
+                <!-- Factory Reset -->
+                <div class="action-card" id="btn-factory-reset"
+                  style="border-color: rgba(255,71,87,0.3); background: rgba(255,71,87,0.05);">
+                  <span class="action-icon">💣</span>
+                  <h4>Factory Reset</h4>
+                  <p class="text-red" style="font-size:11px; margin-top:4px;">⚠️ Semua konfigurasi akan dihapus dan
+                    perangkat direset ke default pabrik.</p>
+                </div>
+
+              </div>
+              <!-- Grafik Toggle Block -->
+              <div class="card mt-24"
+                style="margin-top:24px; padding: 20px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap: 16px;">
+                  <div
+                    style="width: 48px; height: 48px; background: rgba(14, 165, 233, 0.1); color: var(--blue); border-radius: 12px; display:flex; justify-content:center; align-items:center; font-size: 24px;">
+                    📈</div>
+                  <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 16px; color: var(--text-base);">Tampilkan Grafik Sensor
+                    </h4>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Sembunyikan grafik historis untuk
+                      menghemat beban CPU saat membuka log.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="grafik-toggle-switch" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+
+              <!-- Telekontrol Toggle Block -->
+              <div class="card mt-24"
+                style="margin-top:24px; padding: 20px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap: 16px;">
+                  <div
+                    style="width: 48px; height: 48px; background: rgba(168, 85, 247, 0.1); color: var(--purple); border-radius: 12px; display:flex; justify-content:center; align-items:center; font-size: 24px;">
+                    🎛️</div>
+                  <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 16px; color: var(--text-base);">Menu Panel Kontrol</h4>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Tampilkan atau sembunyikan fitur
+                      Telekontrol pada menu navigasi utama.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="telekontrol-toggle-switch" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- LED Toggle Block -->
+              <div class="card mt-24"
+                style="margin-top:24px; padding: 20px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap: 16px;">
+                  <div
+                    style="width: 48px; height: 48px; background: rgba(0, 210, 211, 0.1); color: var(--cyan); border-radius: 12px; display:flex; justify-content:center; align-items:center; font-size: 24px;">
+                    💡</div>
+                  <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 16px; color: var(--text-base);">Indikator NeoPixel</h4>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Aktifkan atau matikan lampu
+                      indikator pada board MLR-S3.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="led-enabled" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <!-- Device Info -->
+              <div class="card mt-24" style="margin-top:24px;">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-icon">ℹ️</span>
+                    Informasi Perangkat
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="grid-2">
+                    <div>
+                      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted); width:140px;">Model</td>
+                          <td class="font-mono text-cyan">Logger Molinar</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">MCU</td>
+                          <td class="font-mono">MLR-S3 R16N8</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">Hostname</td>
+                          <td class="font-mono text-emerald" id="system-hostname-val">-</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">RTC</td>
+                          <td class="font-mono">DS3231SN</td>
+                        </tr>
+                      </table>
+                    </div>
+                    <div>
+                      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted); width:140px;">Versi Firmware</td>
+                          <td class="font-mono text-emerald">v1.0.0</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">Web Interface</td>
+                          <td class="font-mono">v1.0.0</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">Protokol Bus</td>
+                          <td class="font-mono">Modbus RTU, I2C</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0; color:var(--text-muted);">Storage</td>
+                          <td class="font-mono">Internal + MicroSD</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+        </section>
+
+      </main>
+    </div><!-- /main-content -->
+  </div><!-- /app -->
+
+  <!-- ════════════════════════════════════════════════
+     Sensor Section — Show/Hide hint logic
+════════════════════════════════════════════════ -->
+  <script>
+    // Show/hide "no sensor selected" hint in sensor tab
+    function updateSensorHint() {
+      const forms = ['form-rs485', 'form-adc', 'form-current420', 'form-i2c'];
+      const anyVisible = forms.some(id => document.getElementById(id)?.classList.contains('show'));
+      const hint = document.getElementById('no-sensor-selected');
+      if (hint) hint.style.display = anyVisible ? 'none' : 'block';
+    }
+
+    // Observe changes to dynamic form visibility
+    document.addEventListener('DOMContentLoaded', () => {
+      const observer = new MutationObserver(updateSensorHint);
+      ['form-rs485', 'form-adc', 'form-current420', 'form-i2c'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+      });
+      updateSensorHint();
+    });
+  </script>
+
+  <script src="app.js?v=2"></script>
+</body>
+
+</html>
